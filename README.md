@@ -36,6 +36,37 @@ Tüm modellerde veri sızıntısını önlemek ve ezberlemeyi engellemek amacıy
 
 ---
 
+## 🔬 Aktör Bazlı (Subject-Independent) Ayırmanın Önemi
+
+### ❓ "Eğer Aktör Bazlı Ayrım Olmasaydı Ne Olurdu?"
+
+Duygu tanıma çalışmalarında en sık yapılan metodolojik hata, verilerin **rastgele (random split)** veya sadece **duygu sınıflarına göre dengelenerek** bölünmesidir. Bu projede ve bitirme sunumumuzda (Slayt 15-16) özellikle vurgulanan **Aktör Bazlı Bölme (Subject-Independent / Speaker-Independent)** yaklaşımının tercih edilme gerekçesi ve rastgele bölmeyle arasındaki kritik farklar şunlardır:
+
+#### 1. Veri Sızıntısı (Data Leakage)
+- **Rastgele / Duygu Bazlı Bölmede:** Bir aktörün ("Örn: Aktör 01") belirli ses ve video kayıtları eğitim setine giderken, aynı aktörün başka kayıtları test setine düşer.
+- **Sonuç:** Model, test aşamasında daha önce yüzünü ve ses tonunu eğitimde defalarca gördüğü bir kişiyle karşılaşır. Bu durum makine öğrenmesinde doğrudan bir **Veri Sızıntısı (Data Leakage)** problemidir.
+
+#### 2. Kişi ve Biyometrik Kimliği Ezberleme (Identity Overfitting)
+- **Ses Kanalında:** Model, duygunun getirdiği perde (pitch), spektral enerji, tempo veya formant frekanslarını öğrenmek yerine; aktörün kişisel ses rengini (tınısını), konuşma tarzını, temel frekansını (F0) ve vokal imzasını ezberler.
+- **Görsel Kanalda:** Model, kaş çatılması, ağız kenarı gerilmesi gibi evrensel mimik hareketlerini öğrenmek yerine; aktörün ten rengini, yüz morfolojisini, sakalını, saç yapısını veya stüdyo ışıklandırmasını ezberler.
+
+#### 3. Sahte / Yanıltıcı Yüksek Başarı (Artificially Inflated Accuracy)
+- Rastgele bölme yapıldığında modeller kağıt üzerinde **%90 - %98** gibi olağanüstü yüksek doğruluk oranlarına kolaylıkla ulaşabilir.
+- **Ancak bu başarı bir yanılsamadır:** Model gerçekte *duyguları sınıflandırmayı* değil, *kişileri tanımayı (identity classification)* öğrenmiştir.
+- Böyle bir model gerçek dünyaya çıkarılıp daha önce veri setinde hiç yer almayan yeni bir kişiyle test edildiğinde performansı **%40-%50 seviyelerine kadar çakılır**.
+
+#### 4. Bu Projede Elde Edilen Sonuçların Bilimsel Değeri
+- Bu projede 24 aktör kesin sınırlarla ayrılmıştır (%80 Eğitim / %20 Test).
+- Test setindeki 5 aktörün sesi ve yüzü, eğitim esnasında **modele kesinlikle gösterilmemiştir**.
+- Elde edilen **%71 (Ses), %74 (Görsel) ve %81 (Çok Modlu / Late Fusion)** doğruluk oranları; modelin aktörleri ezberlemeden, tamamen yabancı yeni insanlarda da genellenebilir saf duygu dinamiklerini başarıyla öğrendiğini kanıtlar.
+
+| Metodoloji | Test Kümesindeki Kişiler | Modelin Gerçekte Öğrendiği | Kağıt Üstü Doğruluk | Gerçek Hayat Genellenebilirliği |
+| :--- | :--- | :--- | :---: | :---: |
+| **Rastgele / Duygu Bazlı Bölme** | Eğitimde yer alan aynı aktörlerin farklı cümleleri | Biyometrik kimlik, yüz şekli, ses tonu (Ezberleme) | Yapay Olarak Yüksek (~%90 - %98) | ❌ **Çok Zayıf** (Yeni kişide çöker) |
+| **Aktör Bazlı Bölme (Bu Proje)** | Modele tamamen yabancı, görülmemiş aktörler (%20) | Saf duygu dinamikleri, yüz kas hareketleri, prozodi | Gerçekçi ve Dürüst (**%81**) | ✅ **Yüksek** (Gerçek dünyaya uyumlu) |
+
+---
+
 ## 🎯 Tanınan Duygu Sınıfları (8 Sınıf)
 
 Model, RAVDESS standardındaki 8 duygu sınıfını sınıflandırmaktadır:
