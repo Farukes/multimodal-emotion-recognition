@@ -1,7 +1,7 @@
 """
 Görsel Tabanlı Duygu Tanıma Modeli (Visual Emotion Recognition Model)
 
-Bu dosya geriye dönük uyumluluk için sağlanmıştır.
+Bu dosya geriye dönük uyumluluk ve kolay erişim için sağlanmıştır.
 Detaylı mimari ve bağımsız parametreler için visual_model.py dosyasını inceleyebilirsiniz.
 """
 
