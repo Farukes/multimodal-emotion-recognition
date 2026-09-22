@@ -1,8 +1,8 @@
 """
-Çok Modlu Duygu Tanıma - Geç Birleştirme (Multimodal Late Fusion Model)
+Multimodal Emotion Recognition Late Fusion Runner (Compatibility Script)
 
-Bu dosya geriye dönük uyumluluk ve kolay erişim için sağlanmıştır.
-Detaylı mimari ve bağımsız parametreler için multimodal_model.py dosyasını inceleyebilirsiniz.
+This script is provided for convenience and backward compatibility.
+See multimodal_model.py for detailed architecture, arguments, and implementation.
 """
 
 from multimodal_model import main

@@ -1,5 +1,7 @@
-# Multimodal Emotion Recognition from Facial Expressions and Voice
-### Yüz ve Ses Dinamiklerinden Çok Modlu Duygu Tanıma (Bitirme Projesi)
+# Multimodal Emotion Recognition from Facial Expressions and Voice Dynamics
+### Deep Learning-Based Multimodal Emotion Recognition (Graduation Project)
+
+[🇬🇧 English Documentation](README.md) | [🇹🇷 Türkçe Dokümantasyon için tıklayınız](README_TR.md)
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.13%2B-orange.svg)](https://tensorflow.org/)
@@ -7,117 +9,118 @@
 [![Librosa](https://img.shields.io/badge/Librosa-Audio%20Processing-yellow.svg)](https://librosa.org/)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)](LICENSE)
 
-Bu proje, insan konuşmasındaki **ses tonu/prozodi** ve **yüz ifadelerini** eş zamanlı analiz ederek 8 temel duygu durumunu yüksek doğrulukla sınıflandıran derin öğrenme tabanlı **Çok Modlu (Multimodal) Duygu Tanıma Sistemidir**.
+This project is a deep learning-based **Multimodal Emotion Recognition System** that simultaneously analyzes **vocal prosody/dynamics** and **facial expressions** from human speech to classify 8 fundamental emotional states with high accuracy.
 
 ---
 
-## 📌 Proje Özeti ve Motivasyon
+## 📌 Project Overview & Motivation
 
-Tek modlu (yalnızca ses veya yalnızca görüntü) sistemler, ortam gürültüsü, ışık yetersizliği veya bastırılmış mimikler gibi durumlarda yetersiz kalabilmektedir. İnsan iletişiminde ses ve yüz dinamikleri birbirini tamamlayıcı zengin bilgi taşır.
+Unimodal emotion recognition systems (relying solely on audio or solely on video) frequently suffer from ambient noise, poor lighting conditions, or subtle/suppressed facial expressions. In natural human communication, acoustic and facial dynamics carry complementary information that resolve ambiguities when interpreted together.
 
-Bu çalışmada:
-1. **Ses Kanalı:** Ses kayıtlarından 3 kanallı (Mel-Spektrogram, Delta, Delta-Delta) özellik haritası çıkarılmış ve 2D CNN ile eğitilmiştir.
-2. **Görsel Kanal:** Videolardan Haar Cascade ile yüzler tespit edilerek 10 karelik sekanslar oluşturulmuş; uzamsal ve zamansal ilişkileri yakalamak için **TimeDistributed CNN + GRU + Self-Attention** hibrit mimarisi kullanılmıştır.
-3. **Çok Modlu Füzyon (Late Fusion):** İki bağımsız modelin Softmax olasılık vektörleri **Yumuşak Oylama (Soft Voting)** ile karar seviyesinde birleştirilmiştir.
+In this work:
+1. **Audio Channel:** 3-channel feature maps (Log Mel-Spectrogram, Delta velocity, Delta-Delta acceleration) are extracted from speech recordings and classified using a 2D Convolutional Neural Network (CNN).
+2. **Visual Channel:** Faces are detected and cropped from video recordings using OpenCV Haar Cascade, sampled into 10-frame sequences, and processed via a hybrid **TimeDistributed CNN + GRU + Self-Attention** architecture that jointly models spatial facial features and temporal expression transitions.
+3. **Multimodal Late Fusion:** Softmax probability vectors from the independently trained unimodal models are combined at the decision level using **Soft Voting (Weighted Late Fusion)**.
 
 ---
 
-## 📊 Model Başarı ve Karşılaştırma Tablosu
+## 📊 Performance & Comparison Table
 
-Tüm modellerde veri sızıntısını önlemek ve ezberlemeyi engellemek amacıyla **Aktör Bazlı (Subject-Independent / Speaker-Independent)** 80/20 train/test ayrımı uygulanmıştır.
+To strictly prevent data leakage and avoid identity memorization, an **Actor-Based (Subject-Independent / Speaker-Independent)** 80/20 train/test split was enforced across all models.
 
-| Model | Kullanılan Mimari | Girdi Özellikleri | Test Doğruluğu (Accuracy) |
+| Model | Architecture | Input Features | Test Accuracy |
 | :--- | :--- | :--- | :---: |
-| **Ses Modeli (Audio)** | 3 Katmanlı 2D CNN + BatchNorm + Dropout | 3 Kanallı Spektrogram (Mel, Delta, Delta-Delta) [128x128x3] | **%71** |
-| **Görsel Model (Visual)** | TimeDistributed CNN + GRU + Self-Attention | 10 Kare Yüz Sekansı [10x64x64x3] | **%74** |
-| **Birleşik Model (Multimodal)** | Karar Seviyesi Geç Birleştirme (Late Fusion / Soft Voting) | Ses + Görüntü Eş Zamanlı Test Çiftleri | **%81** |
+| **Audio Model** | 3-Layer 2D CNN + BatchNorm + Dropout | 3-Channel Spectrogram (Mel, Delta, Delta2) [128x128x3] | **71%** |
+| **Visual Model** | TimeDistributed CNN + GRU + Self-Attention | 10-Frame Facial Sequence [10x64x64x3] | **74%** |
+| **Multimodal Model** | Decision-Level Late Fusion (Soft Voting) | Synchronized Audio + Video Test Pairs | **81%** |
 
-> 💡 **Önemli Not:** Çok modlu geç birleştirme (Late Fusion), tek modlu modellere kıyasla genel doğrulukta **+%7 ile +%10 arasında belirgin bir performans artışı** sağlamıştır. Bu durum, ses ve görsel kanalların birbirinin eksik kaldığı duygu sınıflarını başarıyla tamamladığını doğrulamaktadır.
+> 💡 **Key Takeaway:** Decision-level late fusion achieves a significant **+7% to +10% accuracy improvement** over unimodal models, demonstrating that vocal acoustics and facial expressions effectively compensate for each other's limitations.
 
 ---
 
-## 🔬 Aktör Bazlı (Subject-Independent) Ayırmanın Önemi
+## 🔬 The Importance of Actor-Based (Subject-Independent) Splitting
 
-### ❓ "Eğer Aktör Bazlı Ayrım Olmasaydı Ne Olurdu?"
+### ❓ "What Would Happen Without Actor-Based Splitting?"
 
-Duygu tanıma çalışmalarında en sık yapılan metodolojik hata, verilerin **rastgele (random split)** veya sadece **duygu sınıflarına göre dengelenerek** bölünmesidir. Bu projede ve bitirme sunumumuzda (Slayt 15-16) özellikle vurgulanan **Aktör Bazlı Bölme (Subject-Independent / Speaker-Independent)** yaklaşımının tercih edilme gerekçesi ve rastgele bölmeyle arasındaki kritik farklar şunlardır:
+In affective computing and emotion recognition research, the most common methodological flaw is using **random split** or **emotion-stratified split** without isolating actors/subjects. In this project (and emphasized in Slides 15–16 of the graduation presentation), the **Actor-Based (Subject-Independent)** split is critically essential for the following reasons:
 
-#### 1. Veri Sızıntısı (Data Leakage)
-- **Rastgele / Duygu Bazlı Bölmede:** Bir aktörün ("Örn: Aktör 01") belirli ses ve video kayıtları eğitim setine giderken, aynı aktörün başka kayıtları test setine düşer.
-- **Sonuç:** Model, test aşamasında daha önce yüzünü ve ses tonunu eğitimde defalarca gördüğü bir kişiyle karşılaşır. Bu durum makine öğrenmesinde doğrudan bir **Veri Sızıntısı (Data Leakage)** problemidir.
+#### 1. Data Leakage
+- **Under Random / Emotion-Based Splitting:** An actor's (e.g., Actor 01) "happy" or "angry" utterances are placed in the training set, while their other utterances end up in the test set.
+- **Consequence:** The model encounters a face and voice it has already memorized during training. In machine learning, this constitutes direct **Data Leakage**.
 
-#### 2. Kişi ve Biyometrik Kimliği Ezberleme (Identity Overfitting)
-- **Ses Kanalında:** Model, duygunun getirdiği perde (pitch), spektral enerji, tempo veya formant frekanslarını öğrenmek yerine; aktörün kişisel ses rengini (tınısını), konuşma tarzını, temel frekansını (F0) ve vokal imzasını ezberler.
-- **Görsel Kanalda:** Model, kaş çatılması, ağız kenarı gerilmesi gibi evrensel mimik hareketlerini öğrenmek yerine; aktörün ten rengini, yüz morfolojisini, sakalını, saç yapısını veya stüdyo ışıklandırmasını ezberler.
+#### 2. Identity & Biometric Overfitting
+- **In the Audio Channel:** Rather than learning universal acoustic markers of emotion (pitch variations, energy shifts, tempo), the model memorizes the actor's unique vocal timbre, average fundamental frequency ($F_0$), and individual speaking style.
+- **In the Visual Channel:** Rather than learning emotional muscle movements (brow furrows, lip corner pulls), the model memorizes the actor's facial bone structure, skin tone, beard, hairstyle, or studio lighting angle.
 
-#### 3. Sahte / Yanıltıcı Yüksek Başarı (Artificially Inflated Accuracy)
-- Rastgele bölme yapıldığında modeller kağıt üzerinde **%90 - %98** gibi olağanüstü yüksek doğruluk oranlarına kolaylıkla ulaşabilir.
-- **Ancak bu başarı bir yanılsamadır:** Model gerçekte *duyguları sınıflandırmayı* değil, *kişileri tanımayı (identity classification)* öğrenmiştir.
-- Böyle bir model gerçek dünyaya çıkarılıp daha önce veri setinde hiç yer almayan yeni bir kişiyle test edildiğinde performansı **%40-%50 seviyelerine kadar çakılır**.
+#### 3. Artificially Inflated / Deceptive Accuracy
+- Models evaluated with random split often achieve deceptively high accuracy on paper (**90% – 98%**).
+- **However, this is an illusion:** The model has not learned to *recognize emotions*; it has learned to *identify individuals (identity classification)*.
+- When deployed in a real-world scenario with an unseen human subject, the accuracy of such a model instantly **plummets to 40% – 50%**.
 
-#### 4. Bu Projede Elde Edilen Sonuçların Bilimsel Değeri
-- Bu projede 24 aktör kesin sınırlarla ayrılmıştır (%80 Eğitim / %20 Test).
-- Test setindeki 5 aktörün sesi ve yüzü, eğitim esnasında **modele kesinlikle gösterilmemiştir**.
-- Elde edilen **%71 (Ses), %74 (Görsel) ve %81 (Çok Modlu / Late Fusion)** doğruluk oranları; modelin aktörleri ezberlemeden, tamamen yabancı yeni insanlarda da genellenebilir saf duygu dinamiklerini başarıyla öğrendiğini kanıtlar.
+#### 4. Scientific Rigor and Generalizability of This Study
+- In this repository, the 24 actors are partitioned strictly into 80% Training (~19 actors) and 20% Testing (~5 actors).
+- The test actors' voices and faces were **never seen or heard by the models during training**.
+- The resulting **71% (Audio), 74% (Visual), and 81% (Multimodal)** scores reflect genuine generalization to new, unseen individuals in real-world conditions.
 
-| Metodoloji | Test Kümesindeki Kişiler | Modelin Gerçekte Öğrendiği | Kağıt Üstü Doğruluk | Gerçek Hayat Genellenebilirliği |
+| Methodology | Test Set Subjects | What the Model Actually Learns | Apparent Accuracy | Real-World Generalizability |
 | :--- | :--- | :--- | :---: | :---: |
-| **Rastgele / Duygu Bazlı Bölme** | Eğitimde yer alan aynı aktörlerin farklı cümleleri | Biyometrik kimlik, yüz şekli, ses tonu (Ezberleme) | Yapay Olarak Yüksek (~%90 - %98) | ❌ **Çok Zayıf** (Yeni kişide çöker) |
-| **Aktör Bazlı Bölme (Bu Proje)** | Modele tamamen yabancı, görülmemiş aktörler (%20) | Saf duygu dinamikleri, yüz kas hareketleri, prozodi | Gerçekçi ve Dürüst (**%81**) | ✅ **Yüksek** (Gerçek dünyaya uyumlu) |
+| **Random / Emotion Split** | Utterances from the *same* actors seen in training | Biometric identity, facial morphology, vocal timbre | Artificially High (~90% - 98%) | ❌ **Extremely Fragile** (Fails on new people) |
+| **Actor-Based Split (This Work)** | Utterances from *completely unseen* actors (20%) | Universal emotion dynamics, facial muscle action, prosody | Realistic & Honest (**81%**) | ✅ **Robust** (Generalizes to real world) |
 
 ---
 
-## 🎯 Tanınan Duygu Sınıfları (8 Sınıf)
+## 🎯 Recognized Emotion Classes (8 Classes)
 
-Model, RAVDESS standardındaki 8 duygu sınıfını sınıflandırmaktadır:
-1. **Nötr** (Neutral)
-2. **Sakin** (Calm)
-3. **Mutlu** (Happy)
-4. **Üzgün** (Sad)
-5. **Öfkeli** (Angry)
-6. **Korkulu** (Fearful)
-7. **İğrenmiş** (Disgust)
-8. **Şaşkın** (Surprised)
+The system classifies all 8 standardized emotion classes from the RAVDESS dataset:
+1. **Neutral** (01)
+2. **Calm** (02)
+3. **Happy** (03)
+4. **Sad** (04)
+5. **Angry** (05)
+6. **Fearful** (06)
+7. **Disgust** (07)
+8. **Surprised** (08)
 
 ---
 
-## 📁 Proje Dosya Yapısı
+## 📁 Repository Structure
 
 ```
 multimodal-emotion-recognition/
 │
-├── dataset/                    # RAVDESS veri seti klasörü (Actor_01, Actor_02...)
+├── dataset/                    # RAVDESS dataset directory (Actor_01, Actor_02...)
 │   └── .gitkeep
-├── models/                     # Eğitilen model ağırlıkları (.keras)
+├── models/                     # Saved model weight checkpoints (.keras)
 │   └── .gitkeep
 │
-├── config.py                   # Genel yapılandırma, duygu etiketleri ve parametreler
-├── audio_model.py              # Ses modeli mimarisi, veri işleme ve eğitim betiği
-├── visual_model.py             # Görsel model (CNN+GRU+Attention) ve eğitim betiği
-├── multimodal_model.py         # Çok modlu geç birleştirme (Late Fusion) değerlendirme betiği
+├── config.py                   # Centralized configuration, emotion labels & hyperparams
+├── audio_model.py              # Audio feature extraction, 2D CNN architecture & training
+├── visual_model.py             # Visual processing (Haar Cascade) & TimeDistributed CNN-GRU-Attention
+├── multimodal_model.py         # Multimodal late fusion evaluation & confusion matrix
 │
-├── ses_model.py                # Ses modeli çalıştırma betiği (audio_model yönlendirmesi)
-├── gorsel_model.py             # Görsel model çalıştırma betiği (visual_model yönlendirmesi)
-├── birlesik_model.py           # Birleşik model çalıştırma betiği (multimodal_model yönlendirmesi)
-├── Sesmodel.py                 # Alternatif çalıştırma betiği
+├── ses_model.py                # Wrapper script for audio_model.py
+├── gorsel_model.py             # Wrapper script for visual_model.py
+├── birlesik_model.py           # Wrapper script for multimodal_model.py
+├── Sesmodel.py                 # Alternative execution wrapper
 │
-├── sunum.pdf                   # Bitirme Projesi detaylı sunum slaytları
-├── requirements.txt            # Gerekli Python kütüphaneleri
-├── .gitignore                  # Git takip dışı dosyalar
-├── LICENSE                     # MIT Lisansı
-└── README.md                   # Proje dokümantasyonu
+├── sunum.pdf                   # Graduation Project presentation slides
+├── requirements.txt            # Python dependencies
+├── .gitignore                  # Git untracked patterns
+├── LICENSE                     # MIT License
+├── README_TR.md                # Turkish documentation
+└── README.md                   # English documentation (Main)
 ```
 
 ---
 
-## 📥 Veri Seti Kurulumu (RAVDESS)
+## 📥 Dataset Setup (RAVDESS)
 
-Projede dünya standartlarında kabul gören **RAVDESS (The Ryerson Audio-Visual Database of Emotional Speech and Song)** veri seti kullanılmıştır.
+This project utilizes the internationally recognized **RAVDESS (The Ryerson Audio-Visual Database of Emotional Speech and Song)** dataset.
 
-1. **Veri Setini İndirin:**
-   - Resmi Zenodo Bağlantısı: [RAVDESS Dataset Zenodo](https://zenodo.org/records/1188976) veya Kaggle üzerinden `Audio_Speech_Actors_01-24` ve `Video_Speech_Actor_01-24` arşivlerini indirin.
-2. **Klasörleme:**
-   İndirdiğiniz aktör klasörlerini projenin ana dizinindeki `dataset/` içerisine yerleştirin:
+1. **Download the Dataset:**
+   - Official Zenodo Repository: [RAVDESS on Zenodo](https://zenodo.org/records/1188976) or via Kaggle (`Audio_Speech_Actors_01-24` and `Video_Speech_Actor_01-24`).
+2. **Directory Placement:**
+   Extract and place the actor folders inside the `dataset/` directory:
    ```
    dataset/
      ├── Actor_01/
@@ -127,94 +130,94 @@ Projede dünya standartlarında kabul gören **RAVDESS (The Ryerson Audio-Visual
      ├── Actor_02/
      └── ...
    ```
-   *(Farklı bir dizinde tutmak isterseniz betikleri `--data_dir /dosya/yolu` argümanı ile çalıştırabilirsiniz).*
+   *(To use an external dataset location, simply pass `--data_dir "/path/to/ravdess"` to any script).*
 
-### RAVDESS Dosya Adlandırma Formatı:
-Örnek dosya adı: `03-01-03-01-02-01-12.wav`
-- `03`: Modalite (01 = Video ve Ses Full-AV, 02 = Yalnızca Video, 03 = Yalnızca Ses)
-- `01`: Vokal Kanal (01 = Konuşma / Speech, 02 = Şarkı / Song)
-- `03`: Duygu (01: Nötr, 02: Sakin, 03: Mutlu, 04: Üzgün, 05: Öfkeli, 06: Korkulu, 07: İğrenmiş, 08: Şaşkın)
-- `01`: Yoğunluk (01: Normal, 02: Güçlü)
-- `02`: Cümle (01 veya 02)
-- `01`: Tekrar (01 veya 02)
-- `12`: Aktör Numarası (01-24; Tek sayılar erkek, çift sayılar kadın)
+### RAVDESS Filename Convention:
+Example filename: `03-01-03-01-02-01-12.wav`
+- `03`: Modality (`01` = Full-AV, `02` = Video-only, `03` = Audio-only)
+- `01`: Vocal Channel (`01` = Speech, `02` = Song)
+- `03`: Emotion (`01`: Neutral, `02`: Calm, `03`: Happy, `04`: Sad, `05`: Angry, `06`: Fearful, `07`: Disgust, `08`: Surprised)
+- `01`: Intensity (`01` = Normal, `02` = Strong)
+- `02`: Statement (`01` or `02`)
+- `01`: Repetition (`01` or `02`)
+- `12`: Actor ID (`01` to `24`; Odd numbers = Male, Even numbers = Female)
 
 ---
 
-## 🚀 Kurulum ve Çalıştırma
+## 🚀 Installation & Quickstart
 
-### 1. Ortamı Hazırlama
+### 1. Environment Setup
 ```bash
-# Depoyu klonlayın
+# Clone the repository
 git clone https://github.com/Farukes/multimodal-emotion-recognition.git
 cd multimodal-emotion-recognition
 
-# Sanal ortam oluşturup aktif edin
+# Create and activate virtual environment
 python -m venv venv
 # Windows:
 venv\Scripts\activate
 # Linux/macOS:
 source venv/bin/activate
 
-# Gerekli paketleri yükleyin
+# Install required dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Modelleri Eğitme
+### 2. Training the Models
 
-#### Adım 1: Ses Modelini Eğitin
+#### Step 1: Train the Audio Model
 ```bash
 python audio_model.py --epochs 120 --batch_size 16
 ```
-*(Farklı bir veri yolu için: `python audio_model.py --data_dir "D:/RAVDESS"`)*
+*(Custom dataset path: `python audio_model.py --data_dir "/path/to/dataset"`)*
 
-Eğitim tamamlandığında model ağırlıkları `models/sesmodelson.keras` dosyasına kaydedilir ve doğruluk/kayıp ile karmaşıklık matrisi grafikleri ekrana gelir.
+When training finishes, weights are saved to `models/sesmodelson.keras`, and loss/accuracy curves along with confusion matrices are plotted.
 
-#### Adım 2: Görsel Modeli Eğitin
+#### Step 2: Train the Visual Model
 ```bash
 python visual_model.py --epochs 100 --batch_size 16
 ```
-Model `models/gorselson.keras` dosyasına kaydedilir.
+Trained weights are saved to `models/gorselson.keras`.
 
-### 3. Çok Modlu Modeli (Late Fusion) Test Etme
-Ses ve görsel modeller eğitildikten sonra, aktör bazlı ayrılmış test kümesi üzerinde karar füzyonunu çalıştırmak için:
+### 3. Evaluate Multimodal Late Fusion
+Once both models are trained, evaluate late decision fusion across unseen test actors:
 ```bash
 python multimodal_model.py
 ```
-İsteğe bağlı olarak ses ve görsel modellerin oy ağırlıklarını ayarlayabilirsiniz:
+You can optionally adjust unimodal voting weights:
 ```bash
 python multimodal_model.py --audio_weight 0.4 --visual_weight 0.6
 ```
 
 ---
 
-## 🧠 Model Mimarisi Detayları
+## 🧠 Model Architectures
 
-### Ses Modeli (Audio Model)
-- **Girdi:** 128x128 boyutunda 3 kanallı matris (Mel-Spektrogram + Delta Hız + Delta-Delta İvme)
-- **Katmanlar:** 3 adet Conv2D bloğu (64, 128, 256 filtre) + Batch Normalization + ReLU + MaxPooling + Dropout
-- **Sınıflandırma:** Flatten + Dense(512) + Dropout(0.6) + Softmax(8)
+### Audio Model (2D CNN)
+- **Input:** 3-channel spectrogram matrix `(128, 128, 3)` consisting of Log Mel-Spectrogram, Delta (velocity), and Delta-Delta (acceleration).
+- **Backbone:** 3 Conv2D blocks (64, 128, 256 filters) with Batch Normalization, ReLU activation, MaxPooling2D, and Spatial Dropout.
+- **Classifier:** Flatten -> Dense(512) -> BatchNorm -> Dropout(0.6) -> Softmax(8).
 
-### Görsel Model (Visual Model)
-- **Girdi:** Her videodan Haar Cascade ile kırpılıp 64x64 piksele ölçeklenen 10 adet yüz karesi `(10, 64, 64, 3)`
-- **Uzamsal Katman:** TimeDistributed CNN blokları (32, 64, 128 filtre) ile her karenin öznitelik haritası çıkarılır
-- **Zamansal Katman:** 256 birimli GRU (Gated Recurrent Unit) ile kareler arası mimik geçişleri ve zamansal akış modellenir
-- **Öz-Dikkat (Self-Attention):** Duygu ifadesinin en belirgin olduğu kritik anları daha yüksek ağırlıkla öne çıkaran Attention katmanı
-- **Sınıflandırma:** Dense(512) + Batch Normalization + Dropout(0.65) + Softmax(8)
+### Visual Model (TimeDistributed CNN + GRU + Attention)
+- **Input:** Uniformly sampled 10 face frames cropped via Haar Cascade and resized to `(10, 64, 64, 3)`.
+- **Spatial Feature Extractor:** TimeDistributed Conv2D blocks (32, 64, 128 filters) extracting frame-level visual embeddings.
+- **Temporal Sequence Modeling:** 256-unit GRU (Gated Recurrent Unit) capturing transitions in facial expressions across time.
+- **Self-Attention Mechanism:** Attention layer dynamically assigning higher weights to pivotal emotion-expressing frames.
+- **Classifier:** Dense(512) -> BatchNorm -> Dropout(0.65) -> Softmax(8).
 
-### Çok Modlu Birleştirme (Late Fusion / Soft Voting)
-$$\hat{y} = \arg\max \left( w_{\text{ses}} \cdot P_{\text{ses}} + w_{\text{görsel}} \cdot P_{\text{görsel}} \right)$$
-Eşit ağırlıklandırma ($w_{\text{ses}} = 0.5$, $w_{\text{görsel}} = 0.5$) ile test verilerinde **%81 genel doğruluk** elde edilmiştir.
-
----
-
-## 📽️ Sunum Dosyası
-
-Bitirme projesine ait ayrıntılı sunum slaytlarına, problem tanımına ve karşılaştırmalı grafiklere proje kök dizinindeki [`sunum.pdf`](sunum.pdf) dosyasından ulaşabilirsiniz.
+### Multimodal Late Fusion (Soft Voting)
+$$\hat{y} = \arg\max \left( w_{\text{audio}} \cdot P_{\text{audio}} + w_{\text{visual}} \cdot P_{\text{visual}} \right)$$
+Using equal weighting ($w_{\text{audio}} = 0.5$, $w_{\text{visual}} = 0.5$), the system achieves **81% overall accuracy** on unseen subjects.
 
 ---
 
-## 👨‍💻 Geliştirici ve Lisans
+## 📽️ Presentation Slides
 
-- **Geliştirici:** Ömer Faruk Eskitürk
-- **Lisans:** [MIT Lisansı](LICENSE) - Açık kaynak ve akademik amaçlarla serbestçe kullanılabilir.
+The detailed project presentation slides, theoretical framework, architecture diagrams, and comparative confusion matrices are available in [`sunum.pdf`](sunum.pdf).
+
+---
+
+## 👨‍💻 Author & License
+
+- **Author:** Ömer Faruk Eskitürk
+- **License:** [MIT License](LICENSE) - Free for academic and open-source use.

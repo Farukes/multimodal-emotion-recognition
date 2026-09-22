@@ -1,10 +1,9 @@
 """
-Çok Modlu Duygu Tanıma Modeli - Geç Birleştirme (Multimodal Late Fusion Model)
+Multimodal Emotion Recognition - Late Decision Fusion (Soft Voting)
 
-Bu betik, bağımsız olarak eğitilmiş Ses Modeli (CNN) ve Görsel Modeli (CNN-GRU-Attention)
-birlikte kullanarak 'Geç Birleştirme' (Late Fusion / Soft Voting) uygular.
-Ses ve yüz verisi senkronize test aktörleri üzerinde değerlendirilir ve nihai
-doğruluk ile sınıflandırma performansı raporlanır.
+This script loads the independently trained Audio CNN and Visual CNN-GRU-Attention
+models and evaluates a decision-level Late Fusion (Soft Voting) strategy across
+synchronized test pairs from unseen actors.
 """
 
 import os
@@ -39,7 +38,7 @@ from visual_model import AttentionBlock
 
 def resolve_model_path(model_filename, model_dir):
     """
-    Model dosyasının sırasıyla model_dir dizininde ve proje ana dizininde varlığını kontrol eder.
+    Searches for the model file in the specified model_dir and the project root directory.
     """
     candidate_1 = os.path.join(model_dir, model_filename)
     if os.path.exists(candidate_1):
@@ -54,7 +53,7 @@ def resolve_model_path(model_filename, model_dir):
 
 def extract_audio_features(file_path):
     """
-    Ses dosyasından 3 kanallı (Mel, Delta, Delta-Delta) özellik çıkarır.
+    Extracts 3-channel (Mel, Delta, Delta-Delta) spectrogram representation from speech.
     """
     y, sr = librosa.load(file_path, sr=AUDIO_FIXED_SR)
     mel = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=AUDIO_N_MELS)
@@ -65,7 +64,7 @@ def extract_audio_features(file_path):
 
 def extract_video_frames(video_path, face_cascade, seq_length=VISUAL_SEQUENCE_LENGTH, img_size=VISUAL_IMG_SIZE):
     """
-    Video dosyasından yüz tespiti yaparak 10 adet yüz karesi çıkarır.
+    Extracts 10 uniformly spaced, Haar Cascade-detected facial frames from video.
     """
     cap = cv2.VideoCapture(video_path)
     frames = []
@@ -94,15 +93,15 @@ def extract_video_frames(video_path, face_cascade, seq_length=VISUAL_SEQUENCE_LE
 
 def get_synced_test_data(dataset_path):
     """
-    Test kümesine ait aktörlerin ses ve video kayıtlarını eşleştirerek hazırlar.
+    Synchronizes audio and video pairs for unseen test actors (20% subject-independent split).
     """
-    # 24 Aktör arasından 80/20 aktör bazlı test kümesi seçimi
+    # 24 actors randomly partitioned with fixed seed
     actors = list(range(1, 25))
     random.seed(RANDOM_SEED)
     random.shuffle(actors)
     test_actors = set(actors[int(len(actors) * 0.8):])
 
-    print(f"[BİLGİ] Test Kümesi Aktörleri: {sorted(list(test_actors))}")
+    print(f"[INFO] Test Partition Actors: {sorted(list(test_actors))}")
 
     xs_test, xv_test, y_true = [], [], []
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -115,12 +114,12 @@ def get_synced_test_data(dataset_path):
 
     if not audio_files:
         raise FileNotFoundError(
-            f"[HATA] '{dataset_path}' dizininde '03-*.wav' ses dosyası bulunamadı. "
-            f"Lütfen geçerli veri seti yolunu belirtin."
+            f"[ERROR] No '03-*.wav' audio files found in '{dataset_path}'. "
+            f"Please verify the dataset path."
         )
 
     audio_files.sort()
-    print(f"[BİLGİ] {len(audio_files)} ses dosyası taranarak eşleşen test verileri oluşturuluyor...")
+    print(f"[INFO] Scanning {len(audio_files)} audio files to construct synchronized multimodal test pairs...")
 
     for f_path in audio_files:
         f_name = os.path.basename(f_path)
@@ -129,7 +128,7 @@ def get_synced_test_data(dataset_path):
 
         if a_id in test_actors:
             try:
-                # Eşleşen video dosya adını belirle (03 ile başlayan ses -> 01 ile başlayan Full-AV video)
+                # Find matching Full-AV video (03- -> 01-)
                 v_name = "01" + f_name[2:].replace(".wav", ".mp4")
                 v_path = None
 
@@ -158,71 +157,71 @@ def get_synced_test_data(dataset_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Çok Modlu Duygu Tanıma - Geç Birleştirme (Late Fusion)")
+    parser = argparse.ArgumentParser(description="Multimodal Emotion Recognition - Late Decision Fusion")
     parser.add_argument("--data_dir", type=str, default=DEFAULT_DATASET_DIR,
-                        help="RAVDESS veri setinin bulunduğu dizin yolu")
+                        help="Path to the RAVDESS dataset directory")
     parser.add_argument("--model_dir", type=str, default=DEFAULT_MODEL_DIR,
-                        help="Eğitilen modellerin (.keras) bulunduğu dizin yolu")
+                        help="Path containing trained model weight files (.keras)")
     parser.add_argument("--audio_weight", type=float, default=0.5,
-                        help="Ses modeli ağırlığı (varsayılan: 0.5)")
+                        help="Decision weight for Audio Model (default: 0.5)")
     parser.add_argument("--visual_weight", type=float, default=0.5,
-                        help="Görsel model ağırlığı (varsayılan: 0.5)")
+                        help="Decision weight for Visual Model (default: 0.5)")
     args = parser.parse_args()
 
-    # Modelleri Bul ve Yükle
+    # Locate trained weights
     audio_path = resolve_model_path(AUDIO_MODEL_FILENAME, args.model_dir)
     visual_path = resolve_model_path(VISUAL_MODEL_FILENAME, args.model_dir)
 
     if not audio_path or not visual_path:
-        print("\n[UYARI] Eğitilmiş model dosyaları bulunamadı:")
-        print(f" - Ses Modeli ({AUDIO_MODEL_FILENAME}): {'BULUNDU (' + audio_path + ')' if audio_path else 'BULUNAMADI'}")
-        print(f" - Görsel Model ({VISUAL_MODEL_FILENAME}): {'BULUNDU (' + visual_path + ')' if visual_path else 'BULUNAMADI'}")
-        print("\nLütfen önce modelleri eğitin:")
+        print("\n[WARNING] Trained model weight checkpoints were not found:")
+        print(f" - Audio Model ({AUDIO_MODEL_FILENAME}): {'FOUND (' + audio_path + ')' if audio_path else 'NOT FOUND'}")
+        print(f" - Visual Model ({VISUAL_MODEL_FILENAME}): {'FOUND (' + visual_path + ')' if visual_path else 'NOT FOUND'}")
+        print("\nPlease train the models first:")
         print(" 1) python audio_model.py")
         print(" 2) python visual_model.py")
-        print("Veya hazır ağırlıkları 'models/' klasörüne yerleştirin.")
+        print("Or place pre-trained weights in the 'models/' directory.")
         return
 
-    print("[1/3] Modeller yükleniyor...")
+    print("[1/3] Loading trained neural networks...")
     with CustomObjectScope({'AttentionBlock': AttentionBlock}):
         model_ses = load_model(audio_path)
         model_video = load_model(visual_path)
-    print(f"[BAŞARILI] Ses Modeli: {audio_path}")
-    print(f"[BAŞARILI] Görsel Modeli: {visual_path}")
+    print(f"[SUCCESS] Loaded Audio Model: {audio_path}")
+    print(f"[SUCCESS] Loaded Visual Model: {visual_path}")
 
-    # Test Verilerini Eşle ve Hazırla
-    print("\n[2/3] Eş zamanlı test verileri toplanıyor...")
+    # Synchronize multimodal test data
+    print("\n[2/3] Constructing synchronized test set from unseen subjects...")
     xs, xv, y_true = get_synced_test_data(args.data_dir)
 
     if len(xs) == 0:
-        print("\n[HATA] Eşleşen test verisi bulunamadı!")
-        print("Lütfen veri seti klasör yapısını kontrol edin. Beklenen yapı: Actor_01, Actor_02... dizinleri.")
+        print("\n[ERROR] No matching audio-video test pairs found!")
+        print("Please check the directory structure. Expected folders: Actor_01, Actor_02, etc.")
         return
 
-    # Tahmin ve Geç Birleştirme (Late Fusion)
-    print(f"\n[3/3] {len(xs)} adet test örneği üzerinde Geç Birleştirme (Late Fusion) gerçekleştiriliyor...")
+    # Predictions & Late Fusion
+    print(f"\n[3/3] Performing Decision-Level Late Fusion on {len(xs)} test samples...")
     p_s = model_ses.predict(xs)
     p_v = model_video.predict(xv)
 
-    # Yumuşak Oylama (Soft Voting) ile olasılık vektörlerinin ağırlıklı ortalaması
+    # Weighted Soft Voting
     w_s = args.audio_weight
     w_v = args.visual_weight
     p_final = (w_s * p_s) + (w_v * p_v)
     y_pred = np.argmax(p_final, axis=1)
 
-    # Sonuçların Raporlanması
-    print("\n" + "=" * 55)
-    print("      ÇOK MODLU (MULTIMODAL) MODEL TEST SONUÇLARI      ")
-    print("=" * 55)
+    # Results reporting
+    print("\n" + "=" * 60)
+    print("      MULTIMODAL MODEL EVALUATION (LATE DECISION FUSION)      ")
+    print("=" * 60)
     print(classification_report(y_true, y_pred, target_names=EMOTIONS))
 
-    # Karmaşıklık Matrisi (Confusion Matrix)
+    # Confusion matrix
     plt.figure(figsize=(10, 8))
     sns.heatmap(confusion_matrix(y_true, y_pred), annot=True, fmt='d', cmap='Blues',
                 xticklabels=EMOTIONS, yticklabels=EMOTIONS)
-    plt.title('Çok Modlu Model (Geç Birleştirme) - Karmaşıklık Matrisi')
-    plt.xlabel('Tahmin Edilen Duygu (Predicted)')
-    plt.ylabel('Gerçek Duygu (Actual)')
+    plt.title('Multimodal Model (Late Fusion) - Confusion Matrix')
+    plt.xlabel('Predicted Emotion')
+    plt.ylabel('Ground Truth Emotion')
     plt.tight_layout()
     plt.show()
 

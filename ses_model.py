@@ -1,8 +1,8 @@
 """
-Ses Tabanlı Duygu Tanıma Modeli (Audio Emotion Recognition Model)
+Audio Emotion Recognition Model Runner (Compatibility Script)
 
-Bu dosya geriye dönük uyumluluk ve kolay erişim için sağlanmıştır.
-Detaylı mimari ve bağımsız parametreler için audio_model.py dosyasını inceleyebilirsiniz.
+This script is provided for convenience and backward compatibility.
+See audio_model.py for detailed architecture, arguments, and implementation.
 """
 
 from audio_model import main
