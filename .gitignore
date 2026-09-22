@@ -1,0 +1,52 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+tf_env/
+
+# IDE & Editor settings
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Datasets (Do NOT commit heavy audio/video media)
+dataset/*
+!dataset/.gitkeep
+archive/
+*.wav
+*.mp4
+*.avi
+*.mkv
+*.tar
+*.gz
+*.zip
+
+# Trained Model Binaries (Weight files)
+models/*
+!models/.gitkeep
+*.keras
+*.h5
+*.hdf5
+*.tflite
+*.pb
+variables/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Log and Output files
+*.log
+*.tmp
+outputs/
+results/*.png

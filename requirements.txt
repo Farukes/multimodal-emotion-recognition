@@ -1,0 +1,17 @@
+# Temel Derin Öğrenme ve Makine Öğrenmesi Kütüphaneleri
+tensorflow>=2.13.0
+keras>=2.13.1
+scikit-learn>=1.2.0
+
+# Ses ve Görüntü İşleme Kütüphaneleri
+librosa>=0.10.0
+soundfile>=0.12.1
+opencv-python>=4.8.0
+numpy>=1.23.5,<2.0.0
+
+# Görselleştirme ve Analiz Kütüphaneleri
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Yardımcı Araçlar
+PyPDF2>=3.0.0

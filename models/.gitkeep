@@ -1,0 +1,2 @@
+# Bu klasör eğitilen model ağırlıkları (.keras) içindir (sesmodelson.keras, gorselson.keras).
+# audio_model.py ve visual_model.py çalıştırıldığında modeller otomatik buraya kaydedilir.
