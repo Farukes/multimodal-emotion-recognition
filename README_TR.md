@@ -98,11 +98,6 @@ multimodal-emotion-recognition/
 ├── visual_model.py             # Görsel model (CNN+GRU+Attention) ve eğitim betiği
 ├── multimodal_model.py         # Çok modlu geç birleştirme (Late Fusion) değerlendirme betiği
 │
-├── ses_model.py                # Ses modeli çalıştırma betiği (audio_model yönlendirmesi)
-├── gorsel_model.py             # Görsel model çalıştırma betiği (visual_model yönlendirmesi)
-├── birlesik_model.py           # Birleşik model çalıştırma betiği (multimodal_model yönlendirmesi)
-├── Sesmodel.py                 # Alternatif çalıştırma betiği
-│
 ├── sunum.pdf                   # Bitirme Projesi detaylı sunum slaytları
 ├── requirements.txt            # Gerekli Python kütüphaneleri
 ├── .gitignore                  # Git takip dışı dosyalar

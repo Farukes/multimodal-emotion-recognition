@@ -98,11 +98,6 @@ multimodal-emotion-recognition/
 ├── visual_model.py             # Visual processing (Haar Cascade) & TimeDistributed CNN-GRU-Attention
 ├── multimodal_model.py         # Multimodal late fusion evaluation & confusion matrix
 │
-├── ses_model.py                # Wrapper script for audio_model.py
-├── gorsel_model.py             # Wrapper script for visual_model.py
-├── birlesik_model.py           # Wrapper script for multimodal_model.py
-├── Sesmodel.py                 # Alternative execution wrapper
-│
 ├── sunum.pdf                   # Graduation Project presentation slides
 ├── requirements.txt            # Python dependencies
 ├── .gitignore                  # Git untracked patterns
