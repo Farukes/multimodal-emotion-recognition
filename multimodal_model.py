@@ -6,32 +6,31 @@ models and evaluates a decision-level Late Fusion (Soft Voting) strategy across
 synchronized test pairs from unseen actors.
 """
 
-import os
 import argparse
+import os
 import random
+
 import cv2
 import librosa
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
-from sklearn.metrics import confusion_matrix, classification_report
-
-import tensorflow as tf
+from sklearn.metrics import classification_report, confusion_matrix
 from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import CustomObjectScope
 
 from config import (
-    EMOTIONS,
+    AUDIO_FIXED_SR,
+    AUDIO_IMG_SHAPE,
+    AUDIO_MODEL_FILENAME,
+    AUDIO_N_MELS,
     DEFAULT_DATASET_DIR,
     DEFAULT_MODEL_DIR,
-    AUDIO_MODEL_FILENAME,
-    VISUAL_MODEL_FILENAME,
-    AUDIO_FIXED_SR,
-    AUDIO_N_MELS,
-    AUDIO_IMG_SHAPE,
+    EMOTIONS,
+    RANDOM_SEED,
     VISUAL_IMG_SIZE,
+    VISUAL_MODEL_FILENAME,
     VISUAL_SEQUENCE_LENGTH,
-    RANDOM_SEED
 )
 from visual_model import AttentionBlock
 
@@ -95,13 +94,12 @@ def get_synced_test_data(dataset_path):
     """
     Synchronizes audio and video pairs for unseen test actors (20% subject-independent split).
     """
-    # 24 actors randomly partitioned with fixed seed
     actors = list(range(1, 25))
     random.seed(RANDOM_SEED)
     random.shuffle(actors)
     test_actors = set(actors[int(len(actors) * 0.8):])
 
-    print(f"[INFO] Test Partition Actors: {sorted(list(test_actors))}")
+    print(f"[INFO] Test Partition Actors: {sorted(test_actors)}")
 
     xs_test, xv_test, y_true = [], [], []
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -150,7 +148,8 @@ def get_synced_test_data(dataset_path):
                         xs_test.append(s_feat)
                         xv_test.append(v_frames)
                         y_true.append(int(parts[2]) - 1)
-            except Exception:
+            except (cv2.error, IndexError, ValueError) as err:
+                print(f"[WARNING] Skipping sample '{f_name}': {err}")
                 continue
 
     return np.array(xs_test), np.array(xv_test), np.array(y_true)

@@ -7,34 +7,42 @@ and trains a hybrid TimeDistributed CNN + GRU + Self-Attention architecture to
 classify 8 emotional states using an actor-based (subject-independent) evaluation.
 """
 
-import os
 import argparse
+import os
 import random
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import confusion_matrix, classification_report
 
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
 import tensorflow as tf
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import (
-    Dense, BatchNormalization, Dropout,
-    TimeDistributed, GRU, Conv2D,
-    MaxPooling2D, Flatten, Input, Layer
-)
-from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping
-from tensorflow.keras.optimizers import Adam
+from sklearn.metrics import classification_report, confusion_matrix
 from tensorflow.keras import regularizers
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.layers import (
+    GRU,
+    BatchNormalization,
+    Conv2D,
+    Dense,
+    Dropout,
+    Flatten,
+    Input,
+    Layer,
+    MaxPooling2D,
+    TimeDistributed,
+)
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
 
 from config import (
-    EMOTIONS,
     DEFAULT_DATASET_DIR,
     DEFAULT_MODEL_DIR,
-    VISUAL_MODEL_FILENAME,
+    EMOTIONS,
+    NUM_CLASSES,
+    RANDOM_SEED,
     VISUAL_IMG_SIZE,
+    VISUAL_MODEL_FILENAME,
     VISUAL_SEQUENCE_LENGTH,
-    RANDOM_SEED
 )
 
 
@@ -44,7 +52,7 @@ class AttentionBlock(Layer):
     along the sequence length to focus on critical emotion-bearing frames.
     """
     def __init__(self, units, **kwargs):
-        super(AttentionBlock, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.units = units
         self.W = Dense(units, activation='tanh')
         self.V = Dense(1)
@@ -57,7 +65,7 @@ class AttentionBlock(Layer):
         return context_vector
 
     def get_config(self):
-        config = super(AttentionBlock, self).get_config()
+        config = super().get_config()
         config.update({"units": self.units})
         return config
 
@@ -133,14 +141,15 @@ def collect_visual_dataset(dataset_path, seq_length=VISUAL_SEQUENCE_LENGTH, img_
                 is_mirrored.append(True)
 
             cap.release()
-        except Exception:
+        except (cv2.error, IndexError, ValueError) as err:
+            print(f"\n[WARNING] Skipping problematic video '{v_path}': {err}")
             continue
 
     print(f"\n[INFO] Successfully extracted {len(X_sequences)} video sequences.")
     return np.array(X_sequences), np.array(y_labels), np.array(actor_ids), np.array(is_mirrored)
 
 
-def build_visual_model(seq_length=VISUAL_SEQUENCE_LENGTH, img_size=VISUAL_IMG_SIZE, num_classes=len(EMOTIONS)):
+def build_visual_model(seq_length=VISUAL_SEQUENCE_LENGTH, img_size=VISUAL_IMG_SIZE, num_classes=NUM_CLASSES):
     """
     Constructs the hybrid TimeDistributed CNN + GRU + Attention deep learning model.
     """

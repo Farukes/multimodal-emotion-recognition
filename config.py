@@ -19,6 +19,9 @@ EMOTIONS = [
     'Surprised'  # 08
 ]
 
+# Total Number of Emotion Classes
+NUM_CLASSES = len(EMOTIONS)
+
 # Turkish Labels for Localization & Presentation Mapping
 EMOTIONS_TR = [
     'Nötr',

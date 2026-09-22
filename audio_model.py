@@ -7,31 +7,39 @@ and Delta-Delta acceleration), and trains a 2D Convolutional Neural Network (CNN
 to classify 8 emotional states using an actor-based (subject-independent) evaluation.
 """
 
-import os
 import argparse
+import os
 import random
+
 import cv2
 import librosa
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
-from sklearn.metrics import confusion_matrix, classification_report
-
-import tensorflow as tf
+from sklearn.metrics import classification_report, confusion_matrix
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.layers import (
+    Activation,
+    BatchNormalization,
+    Conv2D,
+    Dense,
+    Dropout,
+    Flatten,
+    MaxPooling2D,
+)
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dense, BatchNormalization, Activation
-from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping
 from tensorflow.keras.optimizers import Adam
 
 from config import (
-    EMOTIONS,
+    AUDIO_FIXED_SR,
+    AUDIO_IMG_SHAPE,
+    AUDIO_MODEL_FILENAME,
+    AUDIO_N_MELS,
     DEFAULT_DATASET_DIR,
     DEFAULT_MODEL_DIR,
-    AUDIO_MODEL_FILENAME,
-    AUDIO_IMG_SHAPE,
-    AUDIO_FIXED_SR,
-    AUDIO_N_MELS,
-    RANDOM_SEED
+    EMOTIONS,
+    NUM_CLASSES,
+    RANDOM_SEED,
 )
 
 
@@ -100,14 +108,15 @@ def load_audio_dataset(dataset_path):
             X.append(spec)
             y.append(emotion_idx)
             actor_ids.append(actor_id)
-        except Exception:
+        except (IndexError, ValueError) as err:
+            print(f"\n[WARNING] Skipping malformed file '{a_path}': {err}")
             continue
 
     print(f"\n[INFO] Successfully extracted features for {len(X)} audio samples.")
     return np.array(X), np.array(y), np.array(actor_ids)
 
 
-def build_audio_model(input_shape=AUDIO_IMG_SHAPE, num_classes=len(EMOTIONS)):
+def build_audio_model(input_shape=AUDIO_IMG_SHAPE, num_classes=NUM_CLASSES):
     """
     Constructs the 3-Layer 2D Convolutional Neural Network (CNN) architecture.
     """
@@ -214,7 +223,6 @@ def main():
     X_raw, y_raw, a_ids = load_audio_dataset(args.data_dir)
 
     # Subject-Independent / Actor-Based Train/Test Split
-    # Isolating actors ensures the model learns emotion dynamics rather than memorizing individual identities.
     unique_actors = sorted(np.unique(a_ids))
     random.seed(RANDOM_SEED)
     random.shuffle(unique_actors)
